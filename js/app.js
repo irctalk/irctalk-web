@@ -8,6 +8,9 @@ var Manager = {
     server_id : -1,
     channel: ""
   },
+  servers:[],
+  channels:[],
+  server_template:_.template($('#server-template').html()),
   sendMessage:function() {
     var text = $('#text-input').val();  
     if(text==""){  
@@ -30,9 +33,12 @@ var Manager = {
           return;
         }  
       });
+
+      Manager.initAddServer();
     });
   },
   pushLogs:function(logs) {
+    if ( logs == null || logs.length == 0 ) return;
     var hasCurrentChannel = false;
     for ( var i = 0,_n=logs.length ; i < _n; i++) {
       var server_id = logs[i].server_id;
@@ -81,6 +87,88 @@ var Manager = {
       $("#chatLog").html("");
       this.updateChatting();  
     }
+  },
+  setServers:function(connection_info) {
+    var servers = connection_info['servers'];
+    var channels = connection_info['channels'];
+
+    this.servers = servers;
+    this.channels = channels;
+
+    this.updateServerListView();
+    socket_action("getInitLogs",{});
+  },
+  updateServerListView:function() {
+    //update by Manager's servers, channels
+    var $serverList = $("#serverList");
+    $serverList.html("");
+    for (var i = 0 ; i < this.servers.length; i++) {
+      var $server = this.servers[i];
+      var $server_elem = $(this.server_template($server))
+      $("#serverList").append($server_elem)
+      var $channel_ul = $server_elem.find(".ul-channels");
+      for ( var j = 0 ; j < this.channels.length; j++) {
+        var $channel = this.channels[j];
+        if ($channel.server_id == $server.id )
+        {
+          var $channel_li = $('<li><a><i class="icon-chevron-right"></i>'+$channel.channel+'</a></li>');
+          $channel_ul.append($channel_li);
+          (function(server,channel){
+            $channel_li.click(function(){
+              Manager.setCurrentChannel({"server_id":server,"channel":channel});
+            });
+          })($server.id,$channel.channel);
+        }
+      }
+      var $channel_add = $('<li><a><i class="icon-plus"></i>ADD CHANNEL</a></li>')
+      $channel_ul.append($channel_add);
+      (function(server) {
+        $channel_add.click(function() {
+          socket_action('addChannel',{"server_id":server,"channel":prompt("Enter Channel Name")});
+        });
+      })($server.id);
+    }
+    var $addServer_elem = $('<a id="ADD Server"><i class="icon-plus"></i>ADD SERVER</a>');
+    $serverList.append($addServer_elem);
+    $addServer_elem.click(function(){
+      Manager.showAddServer();
+    });   
+  },
+  initAddServer:function() {
+    $("#addServer-form").submit(function(){
+
+      $("#addServer-div").hide();  
+
+      var data = {};
+      $("#addServer-form input").each(function() {
+        var $val;
+        switch($(this).attr("type")) {
+          case "text":
+            $val = $(this).val();
+            break;
+          case "checkbox":
+            $val = $(this).attr("checked")=="checked";
+            break;
+          case "number":
+            $val = parseInt($(this).val());
+            break;
+        }
+        
+        var $t = $(this).attr("name").split("-");
+        if ( $t.length == 1 ) {
+          data[$t[0]] = $val;
+          return;
+        } 
+        data[$t[0]] = data[$t[0]] || {};
+        data[$t[0]][$t[1]] = $val;
+      })
+      socket_action("addServer", {server : data});
+      return false;
+    });
+  },
+  showAddServer:function() {
+    $("#addServer-div input").val("");
+    $("#addServer-div").show();
   }
 };
 Manager.init();
@@ -162,6 +250,7 @@ var ChannelListView  = Backbone.View.extend({
   }  
 });
 
+
 var Server = Backbone.Model.extend({
   defaults: function() {
     return {
@@ -189,9 +278,7 @@ var ServerView = Backbone.View.extend({
   render: function() {
     $(this.el).addClass("active");
     var channels = this.model.get('channels');
-    //DEBUG
-    channels.push({'server_id':channels[0].server_id,'channel':'#test'})
-
+    
     this.$el.html(this.template(this.model.toJSON()));
     this.$('.ul-channels').append(
       (new ChannelListView(channels)).render().$el
@@ -317,12 +404,12 @@ function socket_message(msg) {
       socket_action("login",{"auth_key":inner_data.auth_key})
       break;
     case "login":
+    case "addServer":
+    case "addChannel":
       socket_action("getServers",{});
       break;
     case "getServers":
-      var servers = inner_data["servers"];
-      serverListView = new ServerListView(servers);      
-      socket_action("getInitLogs",{"server_id":-1,"last_log_id":-1});
+      Manager.setServers(inner_data); // { servers:[],channels:[]}
       break;
     case "getInitLogs":
       Manager.pushLogs(inner_data.logs);
