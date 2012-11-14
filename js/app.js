@@ -40,23 +40,42 @@ var Manager = {
   pushLogs:function(logs) {
     if ( logs == null || logs.length == 0 ) return;
     var hasCurrentChannel = false;
+
     for ( var i = 0,_n=logs.length ; i < _n; i++) {
       var server_id = logs[i].server_id;
       var channel = logs[i].channel;
-      LOGS[server_id] = LOGS[server_id] || {};
-      LOGS[server_id][channel] = LOGS[server_id][channel] || [];
-      LOGS[server_id][channel].push(logs[i]);
-      LOGS[server_id][channel].sort(function(a,b){return a.log_id>b.log_id;})
-
       if ( server_id == this.currentChannel.server_id && channel == this.currentChannel.channel)
       {
         hasCurrentChannel = true;
       }
-    }
 
+      LOGS[server_id] = LOGS[server_id] || {};
+      LOGS[server_id][channel] = LOGS[server_id][channel] || [];
+      var found = false;
+      for ( var j = 0, _jn = LOGS[server_id][channel].length ; j < _jn ; j++ )
+      {
+        if ( logs[i].log_id == LOGS[server_id][channel][j].log_id ){
+          found = true;
+          break;
+        }        
+      }
+      if ( !found ) {
+        LOGS[server_id][channel].push(logs[i]);
+        LOGS[server_id][channel].sort(function(a,b){return (a.log_id>b.log_id) ? 1 : -1;})
+      }
+    }
+    
     if ( hasCurrentChannel ) {
       this.updateChatting();
     }
+  },
+  getPastLogs: function() {
+    this.currentChannel.isPastLogsLoading = this.currentChannel.isPastLogsLoading || false;
+    if ( this.currentChannel.isPastLogsLoading ) return;
+    this.currentChannel.isPastLogsLoading = true;
+    var server_id = this.currentChannel.server_id;
+    var channel = this.currentChannel.channel;
+    socket_action("getPastLogs", {server_id : server_id, channel: channel, last_log_id:LOGS[server_id][channel][0].log_id});
   },
   updateChatting: function () {
     var server_id = this.currentChannel.server_id;
@@ -71,7 +90,32 @@ var Manager = {
     }
     for ( var i = 0, _n = currentLogs.length; i< _n ; i++ ) {
       if ( currentLogs[i].log_id <= last_log_id) continue;
-      var appendLog = currentLogs[i];
+      $("#chatLog").append(makeLogDOM(currentLogs[i]));
+      var currentScroll = $("#chatLog").scrollTop()
+    }
+
+    var firstLog = $("#chatLog .message:first");
+    var first_log_id = -1;
+    if ( firstLog.length > 0 ) {
+      first_log_id = firstLog.attr('log_id');
+    }
+    for ( var i = 0, _n = currentLogs.length; i< _n ; i++ ) {
+      if ( currentLogs[i].log_id == first_log_id) {
+        $chatLog = $("#chatLog");
+        var cumulateScrollTop = 0;
+        var currentScroll = $chatLog.scrollTop()    
+        for ( var j = i-1; j >=0 ; j-- ) {
+          var $logDOM = makeLogDOM(currentLogs[j])
+          $chatLog.prepend($logDOM);
+          cumulateScrollTop += $logDOM.height()+10;
+        }
+        $chatLog.scrollTop(currentScroll+cumulateScrollTop);
+        break;
+      }     
+    }
+
+    function makeLogDOM(log) {
+      var appendLog = log;
       var logTimeString = new Date(appendLog.timestamp).toLocaleTimeString().substr(0,5)
       var isSystemMessage = ( appendLog.from == undefined );
       var fromString;
@@ -80,13 +124,11 @@ var Manager = {
       } else {
         fromString = '<b>'+appendLog.from+': </b>';
       }
-      var $message = $('<p class="message" log_id="'+appendLog.log_id+'"><span class="log-time">'+logTimeString+'</span>'+fromString+appendLog.message+'</p>');
+      var $message = $('<p class="message" log_id="'+appendLog.log_id+'"><span class="debug">'+appendLog.log_id+'  </span><span class="log-time">'+logTimeString+'</span>'+fromString+appendLog.message+'</p>');
       if ( isSystemMessage ) {
         $message.addClass("system");
       }
-      $("#chatLog").append($message);
-      var currentScroll = $("#chatLog").scrollTop()
-      $("#chatLog").scrollTop(currentScroll+40);
+      return $message;
     }
   },
   setCurrentChannel:function(channel_info) {
@@ -123,7 +165,7 @@ var Manager = {
         var $channel = this.channels[j];
         if ($channel.server_id == $server.id )
         {
-          var $channel_li = $('<li><a><i class="icon-chevron-right"></i>'+$channel.channel+'</a></li>');
+          var $channel_li = $('<li><a href="'+$channel.channel+'"><i class="icon-chevron-right"></i>'+$channel.channel+'</a></li>');
           $channel_ul.append($channel_li);
           (function(server,channel){
             $channel_li.click(function(){
@@ -392,6 +434,27 @@ function getHash(key) {
   return "";
 }
 
+function getLocal(key) {
+  return localStorage.getItem(key);
+}
+
+function saveHashToLocal() {
+  if ( undefined != localStorage ) {
+    var keyvals = location.hash.substr(1).split("&");
+    for ( var i = 0 ; i < keyvals.length ; i++ ) {
+      var keyval = keyvals[i].split("=")
+      localStorage.setItem(keyval[0],keyval[1]);
+    }      
+  }
+  location.hash = "";
+}
+
+function clearLocal() {
+  if ( undefined != localStorage ) {
+    localStorage.removeItem("access_token")
+  }
+}
+
 function socket_message(msg) {
   var data = JSON.parse(msg.data);
 
@@ -405,6 +468,11 @@ function socket_message(msg) {
         break;
       case -500:
       //서버 에러.. 알수없는에러..
+        if ( data.type == "register") {
+          clearLocal();
+          tryAuth();
+          return;
+        }
         break;
       default:
       
@@ -430,6 +498,7 @@ function socket_message(msg) {
       Manager.pushLogs(inner_data.logs);
       break;
     case "getPastLogs":
+      Manager.currentChannel.isPastLogsLoading = false;
       Manager.pushLogs(inner_data.logs);
       break;
     case "pushLog":
@@ -444,11 +513,13 @@ function socket_message(msg) {
 
 var serverListView;
 
-$(function(){
-  if ( getHash("access_token").length > 0 ) {
+function tryAuth() {
+  var hasTokenHash = (getHash("access_token").length > 0);
+  if ( hasTokenHash || getLocal("access_token") && getLocal("access_token").length > 0 ) {
+    if ( hasTokenHash ) { saveHashToLocal(); }
     $("#auth").attr("href","./");
     $("#auth span").text("Logout");
-    connect(getHash("access_token"),function(access_token) {
+    connect(getLocal("access_token"),function(access_token) {
       socket_action("register",{"access_token":access_token});
     });
   } else {
@@ -463,12 +534,24 @@ $(function(){
     $("#auth").attr("href",auth_url+str.join("&"));
     $("#auth span").text("Sign in");
   }  
+}
+
+$(function(){
+  tryAuth();
 });
 
 $(function() {
-  $(document).resize(function() {
-    $("#chatLog,#debugLog").height($(this).height()-200)
+  $(window).resize(function() {
+    $("#chatLog,#debugLog").height($(this).height()-150);
   }).resize();
+  $("#chatLog").scroll(function(e){ 
+    var scrollTop = this.scrollTop;
+    if ( $(this)[0].scrollHeight > $(window).height()-150 ) {
+      if ( scrollTop < 200 ) {
+        Manager.getPastLogs();
+      }
+    } 
+  });
   
   $("#debugLog").hide();          
   $("#debug-checkbox").click(function () {
