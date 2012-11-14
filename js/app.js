@@ -72,7 +72,19 @@ var Manager = {
     for ( var i = 0, _n = currentLogs.length; i< _n ; i++ ) {
       if ( currentLogs[i].log_id <= last_log_id) continue;
       var appendLog = currentLogs[i];
-      $("#chatLog").append('<p class="message" log_id="'+appendLog.log_id+'"><b>'+appendLog.from+': </b>'+appendLog.message+'</p>');
+      var logTimeString = new Date(appendLog.timestamp).toLocaleTimeString().substr(0,5)
+      var isSystemMessage = ( appendLog.from == undefined );
+      var fromString;
+      if ( isSystemMessage ) {
+        fromString = "- ";
+      } else {
+        fromString = '<b>'+appendLog.from+': </b>';
+      }
+      var $message = $('<p class="message" log_id="'+appendLog.log_id+'"><span class="log-time">'+logTimeString+'</span>'+fromString+appendLog.message+'</p>');
+      if ( isSystemMessage ) {
+        $message.addClass("system");
+      }
+      $("#chatLog").append($message);
       var currentScroll = $("#chatLog").scrollTop()
       $("#chatLog").scrollTop(currentScroll+40);
     }
