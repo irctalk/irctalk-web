@@ -37,12 +37,11 @@
           overflow-x:hidden;
         }
         .webkit-scrollbar::-webkit-scrollbar {
-          width:16px;
-          height:16px;
+          width:8px;
         }
         .webkit-scrollbar::-webkit-scrollbar-thumb {
-          -webkit-border-radius:12px;
-          background: rgba(200,0,0,0.6);
+          -webkit-border-radius:4px;
+          background: rgba(100,100,100,0.3);
           -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.7);
         }
 
@@ -111,10 +110,10 @@
         </ul>
         <div id="addServer-div" style="display:none;">
           <form id="addServer-form" class="navbar-form pull-left">
-            Name : <input type="text" name="name" class="span2"/><br/>
+            Name : <input type="text" name="name" class="span2" placeholder="ex)Freenode"/><br/>
 
-            HOST : <input type="text" name="server-host" class="span2"/><br/>
-            PORT : <input type="number" name="server-port" class="span2"/><br/>
+            HOST : <input type="text" name="server-host" class="span2" placeholder="ex)*.freenode.net"/><br/>
+            PORT : <input type="text" name="server-port" class="span2" placeholder="ex) 6667,16661" integer/><br/>
             SSL : <input type="checkbox" name="server-ssl" class="span2"/><br/>
             NickName : <input type="text" name="user-nickname" class="span1"/><br/>
             RealName : <input type="text" name="user-realname" class="span1"/><br/>

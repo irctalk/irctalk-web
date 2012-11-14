@@ -145,12 +145,12 @@ var Manager = {
         switch($(this).attr("type")) {
           case "text":
             $val = $(this).val();
+            if ($(this).attr("integer")!=undefined) {
+              $val = parseInt($val);
+            }
             break;
           case "checkbox":
             $val = $(this).attr("checked")=="checked";
-            break;
-          case "number":
-            $val = parseInt($(this).val());
             break;
         }
         
