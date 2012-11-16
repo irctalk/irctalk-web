@@ -61,12 +61,29 @@ var Manager = {
       }
       if ( !found ) {
         LOGS[server_id][channel].push(logs[i]);
+        if ( logs[i].noti ) {
+          var channelInfo = this.getChannelByServerAndChannel(server_id,channel);
+          NotificationCenter.showNotification(channel,logs[i].message, null, (function (g,channelInfo) { 
+            return function () { 
+              g.setCurrentChannel(channelInfo);
+              this.cancel();
+            }
+          })(this,channelInfo));
+        }
         LOGS[server_id][channel].sort(function(a,b){return (a.log_id>b.log_id) ? 1 : -1;})
       }
     }
     
     if ( hasCurrentChannel ) {
       this.updateChatting();
+    }
+  },
+  getChannelByServerAndChannel:function(server_id,channel) {
+    for ( var i = 0 ; i < Manager.channels.length ; i++ )
+    {
+      if ( Manager.channels[i].server_id == server_id && Manager.channels[i].channel == channel) {
+        return Manager.channels[i];
+      }
     }
   },
   getPastLogs: function() {
@@ -151,6 +168,9 @@ var Manager = {
       $("#chatLog").html("");
       this.updateChatting();  
     }
+    var $li = $(".server-header[server_id="+server_id+"]").siblings().find("a").filter(function() { return $(this).text()==channel_name;}).parent();
+    $("#serverList > li > ul > li").not($li).removeClass("active");
+    $li.addClass("active");
   },
   setServers:function(connection_info) {
     var servers = connection_info['servers'];
@@ -181,9 +201,6 @@ var Manager = {
           (function(server,channel,topic){
             $channel_li.click(function(){
               Manager.setCurrentChannel({"server_id":server,"channel":channel,"topic":topic});
-              $li = $(this);
-              $("#serverList > li > ul > li").not($li).removeClass("active");
-              $li.addClass("active");
             });
           })($server.id,$channel.channel,$channel.topic);
         }
@@ -620,3 +637,46 @@ $(function() {
   });
 })(window);
 
+
+var NotificationCenter = {
+  permission:0,
+  init:function (){
+    if ( !window.webkitNotifications ) return;
+    this.permission = window.webkitNotifications.checkPermission();
+    if (this.permission == 0) { // 0 is PERMISSION_ALLOWED
+      $("#request_permission").hide();
+      // function defined in step 2
+      notification_test = window.webkitNotifications.createNotification(
+        'icon.png', 'Hello World!','You can get Notifications!');
+      notification_test.ondisplay = function() {  };
+      notification_test.onclose = function() {  };
+      notification_test.show();
+    } else {
+      $("#request_permission").click(function() {
+        window.webkitNotifications.requestPermission();
+      });
+    }  
+  },
+  showNotification:function(title,content,ondisplay,onclick) {
+    if ( !window.webkitNotifications ) return;
+    this.permission = window.webkitNotifications.checkPermission();
+    if (this.permission == 0) { // 0 is PERMISSION_ALLOWED
+      var notification = window.webkitNotifications.createNotification(
+        'icon.png', title, content);
+      notification.ondisplay = ondisplay;
+      notification.onclick = onclick;
+      notification.show();
+    } else if ( this.permission == 2) {
+      $("#request_permission").text('check your browser setting. it\'s not allowed');
+    } else {
+      $("#request_permission").show();
+      $("#request_permission").click(function() {
+        window.webkitNotifications.requestPermission();
+      });
+    }
+  }
+};
+
+$(function() {
+  NotificationCenter.init();
+});

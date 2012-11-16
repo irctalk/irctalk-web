@@ -97,7 +97,7 @@
       <div class="navbar-inner">
         <div class="container">
           <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-            <span class="icon-bar"></span>
+            <span class="icon-bar"><button id="request_permission" href="#">Notification</button></span>
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
@@ -134,7 +134,7 @@
       </div>
       <div class="span9">
         <section id="chatting">
-          <div class="page-header">
+          <div>
             <h1 id="irc-channel-topic"></h1>
           </div>
           <div id="chatLog" class="webkit-scrollbar"></div>
@@ -148,7 +148,7 @@
 
   <script type="text/template" id="server-template">
     <li class="server">
-      <h3 class="server-header"><%- name %></h3>
+      <h3 class="server-header" server_id="<%- id %>"><%- name %></h3>
       <ul class="ul-channels nav-list nav">
         
       </ul>
