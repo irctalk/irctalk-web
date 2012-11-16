@@ -181,7 +181,7 @@ var Manager = {
             $channel_li.click(function(){
               Manager.setCurrentChannel({"server_id":server,"channel":channel});
               $li = $(this);
-              $li.siblings().removeClass("active");
+              $("#serverList > li > ul > li").not($li).removeClass("active");
               $li.addClass("active");
             });
           })($server.id,$channel.channel);
