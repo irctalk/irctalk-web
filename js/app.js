@@ -413,6 +413,7 @@ function connect(access_token, callback_onopen) {
     }  
     socket.onclose = function(){  
       message('<p class="event">Socket Status: '+socket.readyState+' (Closed)'+'</p>');  
+      tryAuth();
     }  
   } catch(exception){  
     message('<p>Error'+exception+'</p>');  
