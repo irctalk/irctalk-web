@@ -75,6 +75,9 @@
           #serverList > li > ul > li {
             float: left;
           }
+          #serverList > li > ul > li:last-child {
+            float: none;
+          }
 
           div.container > div.row > div {
             position: relative;
@@ -132,7 +135,7 @@
       <div class="span9">
         <section id="chatting">
           <div class="page-header">
-            <h1 id="irc-channel-name"></h1>
+            <h1 id="irc-channel-topic"></h1>
           </div>
           <div id="chatLog" class="webkit-scrollbar"></div>
           <div id="debugLog" class="webkit-scrollbar"></div>

@@ -147,6 +147,7 @@ var Manager = {
     {
       this.currentChannel.server_id = server_id;
       this.currentChannel.channel = channel_name;
+      $("#irc-channel-topic").text(channel_info.topic);
       $("#chatLog").html("");
       this.updateChatting();  
     }
@@ -177,14 +178,14 @@ var Manager = {
         {
           var $channel_li = $('<li><a href="'+$channel.channel+'"><i class="icon-chevron-right"></i>'+$channel.channel+'</a></li>');
           $channel_ul.append($channel_li);
-          (function(server,channel){
+          (function(server,channel,topic){
             $channel_li.click(function(){
-              Manager.setCurrentChannel({"server_id":server,"channel":channel});
+              Manager.setCurrentChannel({"server_id":server,"channel":channel,"topic":topic});
               $li = $(this);
               $("#serverList > li > ul > li").not($li).removeClass("active");
               $li.addClass("active");
             });
-          })($server.id,$channel.channel);
+          })($server.id,$channel.channel,$channel.topic);
         }
       }
       var $channel_add = $('<li><a><i class="icon-plus"></i>ADD CHANNEL</a></li>')
