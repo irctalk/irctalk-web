@@ -90,8 +90,17 @@ var Manager = {
     }
     for ( var i = 0, _n = currentLogs.length; i< _n ; i++ ) {
       if ( currentLogs[i].log_id <= last_log_id) continue;
-      $("#chatLog").append(makeLogDOM(currentLogs[i]));
-      var currentScroll = $("#chatLog").scrollTop()
+      var $chatLog = $("#chatLog");
+      var scrollToBottom = false;
+      if ( $chatLog[0].scrollHeight - ($chatLog[0].scrollTop + $chatLog[0].clientHeight) < 50 ) {
+        scrollToBottom = true;
+      }
+      $chatLog.append(makeLogDOM(currentLogs[i]));
+      
+      if ( scrollToBottom ) {
+        $chatLog.scrollTop( $chatLog[0].scrollHeight - $chatLog[0].clientHeight );
+      }
+      
     }
 
     var firstLog = $("#chatLog .message:first");
@@ -161,6 +170,7 @@ var Manager = {
       var $server_elem = $(this.server_template($server))
       $("#serverList").append($server_elem)
       var $channel_ul = $server_elem.find(".ul-channels");
+      this.channels.sort(function(a,b) { return a.channel < b.channel ? -1 : 1;} )
       for ( var j = 0 ; j < this.channels.length; j++) {
         var $channel = this.channels[j];
         if ($channel.server_id == $server.id )
