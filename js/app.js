@@ -575,3 +575,21 @@ $(function() {
     }
   });
 });
+
+
+/* debug */
+(function (g) { 
+  var BE = [38, 38, 40, 40, 37, 39, 37, 39, 66/*"b"*/, 65/*"a"*/], CE = 0;  
+  $(g).keydown(function(e) {
+    if (e.keyCode == BE[CE]) {
+      CE++;
+      if ( CE == BE.length) {
+        $(".debug").removeClass("debug");
+        CE = 0;
+      }
+    } else {
+      CE = 0;
+    }
+  });
+})(window);
+
