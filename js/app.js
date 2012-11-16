@@ -398,14 +398,14 @@ var ServerListView  = Backbone.View.extend({
 var socket;  
 
 
-function connect(access_token, callback_onopen) {
+function connect(callback_onopen) {
   var host = "ws://laika.redfeel.net:9001/";  
   try{  
     socket = new WebSocket(host);  
     message('<p class="event">Socket Status: '+socket.readyState+'</p>');  
     socket.onopen = function(){  
      message('<p class="event">Socket Status: '+socket.readyState+' (open)'+'</p>');  
-     callback_onopen(access_token);
+     callback_onopen();
     }  
     socket.onmessage = function(msg){  
       if ( JSON.parse(msg.data).type !="pushLog")
@@ -456,6 +456,10 @@ function getLocal(key) {
   return localStorage.getItem(key);
 }
 
+function saveToLocalKey(key,val) {
+  localStorage.setItem(key,val);
+}
+
 function saveHashToLocal() {
   if ( undefined != localStorage ) {
     var keyvals = location.hash.substr(1).split("&");
@@ -470,6 +474,7 @@ function saveHashToLocal() {
 function clearLocal() {
   if ( undefined != localStorage ) {
     localStorage.removeItem("access_token")
+    localStorage.removeItem("auth_key")
   }
 }
 
@@ -479,7 +484,9 @@ function socket_message(msg) {
   if ( data.status != 0 ) {
     switch (data.status) {
       case -401:
-      //재 register필요 
+        clearLocal();
+        tryAuth();
+        return;
         break;
       case -404:
       //type error 알수없는 요청
@@ -502,6 +509,7 @@ function socket_message(msg) {
   var inner_data = data.data;
   switch(data.type) {
     case "register":
+      saveToLocalKey("auth_key",inner_data.auth_key);
       socket_action("login",{"auth_key":inner_data.auth_key})
       break;
     case "login":
@@ -532,6 +540,15 @@ function socket_message(msg) {
 var serverListView;
 
 function tryAuth() {
+  if ( getLocal("auth_key") ) {
+    connect((function(auth_key) {
+      return function () {
+        socket_action("login",{"auth_key":auth_key})
+      }
+    })(getLocal("auth_key")));
+    return;
+  }
+
   var hasTokenHash = (getHash("access_token").length > 0);
   if ( hasTokenHash || getLocal("access_token") && getLocal("access_token").length > 0 ) {
     if ( hasTokenHash ) { saveHashToLocal(); }
@@ -540,9 +557,11 @@ function tryAuth() {
       clearLocal();
     })
     $("#auth span").text("Logout");
-    connect(getLocal("access_token"),function(access_token) {
-      socket_action("register",{"access_token":access_token});
-    });
+    connect((function(access_token) {
+      return function () {
+        socket_action("register",{"access_token":access_token});
+      }
+    })(getLocal("access_token")));
   } else {
     var auth_url = "https://accounts.google.com/o/oauth2/auth?"
     var params = { scope : "https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile",
