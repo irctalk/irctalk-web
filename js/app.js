@@ -528,6 +528,9 @@ function tryAuth() {
   if ( hasTokenHash || getLocal("access_token") && getLocal("access_token").length > 0 ) {
     if ( hasTokenHash ) { saveHashToLocal(); }
     $("#auth").attr("href","./");
+    $("#auth").click(function() {
+      clearLocal();
+    })
     $("#auth span").text("Logout");
     connect(getLocal("access_token"),function(access_token) {
       socket_action("register",{"access_token":access_token});
