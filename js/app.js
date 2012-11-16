@@ -191,7 +191,10 @@ var Manager = {
       $channel_ul.append($channel_add);
       (function(server) {
         $channel_add.click(function() {
-          socket_action('addChannel',{"server_id":server,"channel":prompt("Enter Channel Name")});
+          var a= prompt("Enter Channel Name")
+          if ( a ) {
+            socket_action('addChannel',{"server_id":server,"channel":a});
+          }
         });
       })($server.id);
     }
@@ -231,6 +234,9 @@ var Manager = {
       })
       socket_action("addServer", {server : data});
       return false;
+    });
+    $("#addServer-div button:reset").click(function() {
+      $("#addServer-div").hide();  
     });
   },
   showAddServer:function() {
