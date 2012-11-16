@@ -535,7 +535,7 @@ function tryAuth() {
   } else {
     var auth_url = "https://accounts.google.com/o/oauth2/auth?"
     var params = { scope : "https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile",
-    redirect_uri : "http://localhost",
+    redirect_uri : location.protocol+"//"+location.hostname,
     client_id : "812906460657-6m0d0bsmrtqjt2h9jd29kui3pdg69eb2.apps.googleusercontent.com",
     response_type :"token",
     state: "/profile" };
