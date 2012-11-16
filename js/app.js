@@ -125,7 +125,7 @@ var Manager = {
 
     function makeLogDOM(log) {
       var appendLog = log;
-      var logTimeString = new Date(appendLog.timestamp).toLocaleTimeString().substr(0,5)
+      var logTimeString = new Date(appendLog.timestamp).toTimeString().substr(0,5)
       var isSystemMessage = ( appendLog.from == undefined );
       var fromString;
       if ( isSystemMessage ) {
