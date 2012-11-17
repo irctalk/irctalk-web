@@ -649,7 +649,9 @@ var NotificationCenter = {
       notification_test = window.webkitNotifications.createNotification(
         'icon.png', 'Hello World!','You can get Notifications!');
       notification_test.ondisplay = function() {  };
-      notification_test.onclose = function() {  };
+      notification_test.onclick = function() {
+        notification_test.cancel();
+      };
       notification_test.show();
     } else {
       $("#request_permission").click(function() {
