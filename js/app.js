@@ -40,11 +40,11 @@ var Manager = {
   pushLogs:function(logs) {
     if ( logs == null || logs.length == 0 ) return;
     var hasCurrentChannel = false;
-
+    var currentChannelName = this.currentChannel.channel.toLowerCase();
     for ( var i = 0,_n=logs.length ; i < _n; i++) {
       var server_id = logs[i].server_id;
-      var channel = logs[i].channel;
-      if ( server_id == this.currentChannel.server_id && channel == this.currentChannel.channel)
+      var channel = logs[i].channel.toLowerCase();
+      if ( server_id == this.currentChannel.server_id && channel == currentChannelName)
       {
         hasCurrentChannel = true;
       }
@@ -96,10 +96,11 @@ var Manager = {
   },
   updateChatting: function () {
     var server_id = this.currentChannel.server_id;
+    var channel = this.currentChannel.channel.toLowerCase();
     LOGS[server_id] = LOGS[server_id] || {};
-    LOGS[server_id][this.currentChannel.channel] = LOGS[server_id][this.currentChannel.channel] || [];
+    LOGS[server_id][channel] = LOGS[server_id][channel] || [];
       
-    var currentLogs = LOGS[this.currentChannel.server_id][this.currentChannel.channel];
+    var currentLogs = LOGS[this.currentChannel.server_id][channel];
     var lastLog = $("#chatLog .message:last");
     var last_log_id = -1;
     if ( lastLog.length > 0 ) {
