@@ -37,7 +37,7 @@ var Manager = {
       Manager.initAddServer();
     });
   },
-  pushLogs:function(logs) {
+  pushLogs:function(logs, noti) {
     if ( logs == null || logs.length == 0 ) return;
     var hasCurrentChannel = false;
     var currentChannelName = this.currentChannel.channel.toLowerCase();
@@ -61,7 +61,7 @@ var Manager = {
       }
       if ( !found ) {
         LOGS[server_id][channel].push(logs[i]);
-        if ( logs[i].noti ) {
+        if ( noti && logs[i].noti ) {
           var channelInfo = this.getChannelByServerAndChannel(server_id,channel);
           NotificationCenter.showNotification(channel,logs[i].message, null, (function (g,channelInfo) { 
             return function () { 
@@ -154,6 +154,10 @@ var Manager = {
       var $message = $('<p class="message" log_id="'+appendLog.log_id+'"><span class="debug">'+appendLog.log_id+'  </span><span class="log-time">'+logTimeString+'</span>'+fromString+appendLog.message+'</p>');
       if ( isSystemMessage ) {
         $message.addClass("system");
+      }
+
+      if ( log.noti ) {
+        $message.addClass("notification");
       }
       return $message;
     }
@@ -539,15 +543,15 @@ function socket_message(msg) {
       Manager.setServers(inner_data); // { servers:[],channels:[]}
       break;
     case "getInitLogs":
-      Manager.pushLogs(inner_data.logs);
+      Manager.pushLogs(inner_data.logs, false);
       break;
     case "getPastLogs":
       Manager.currentChannel.isPastLogsLoading = false;
-      Manager.pushLogs(inner_data.logs);
+      Manager.pushLogs(inner_data.logs, false);
       break;
     case "pushLog":
     case "sendLog":
-      Manager.pushLogs([inner_data.log]);
+      Manager.pushLogs([inner_data.log], true);
       //ACK : socket_action("pushLogs",{"log_ids":ids});
       break;
     default:
@@ -626,6 +630,7 @@ $(function() {
 (function (g) { 
   var BE = [38, 38, 40, 40, 37, 39, 37, 39, 66/*"b"*/, 65/*"a"*/], CE = 0;  
   $(g).keydown(function(e) {
+    console.log(e.keyCode);
     if (e.keyCode == BE[CE]) {
       CE++;
       if ( CE == BE.length) {
