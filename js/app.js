@@ -216,6 +216,10 @@ var Manager = {
         $channel_add.click(function() {
           var a= prompt("Enter Channel Name")
           if ( a ) {
+            if ( !/^#.+$/.test(a) ) {
+              alert("채널명에는 #이 필요합니다.")
+              return;
+            }
             socket_action('addChannel',{"server_id":server,"channel":a});
           }
         });
