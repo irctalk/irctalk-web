@@ -31,7 +31,40 @@ var Manager = {
         if (event.keyCode == '13') {  
           Manager.sendMessage();  
           return;
-        }  
+        }
+      });
+      var state = 0, state_tap_string, state_idx;
+      $('#text-input').keydown(function(event) {
+        if (event.keyCode == '9') {
+          if (Manager.currentChannel) {
+            var channel = Manager.getCurrentChannel();
+            var cs = Cursor.getSelectionStart(this);
+            var ce = Cursor.getSelectionEnd(this);
+            var value = this.value;
+            if ( cs == ce ) {
+              state = 1;
+
+              var last_match = value.match(/\S+$/);
+              var same_idx = -1;
+              for ( var i = 0, _n = channel.members; i < _n ; i++ ){
+                if ( channel.members[i].length < last_match.length ) {
+                  continue;
+                } else if (channel.members[i]==last_match){
+                  same_idx = i;
+                }
+              }
+              state_tap_string = last_match;
+              //value.replace(/\S+$/,"asdf3")
+              //this.setSelectionRange(l,l);
+            }
+          }
+          //console.log(state_tap_string + " " + state);
+          return false;
+        } else {
+          state=-1;
+          state_tap_string = undefined;
+          //console.log(state_tap_string + " " + state);
+        }
       });
 
       Manager.initAddServer();
@@ -77,6 +110,9 @@ var Manager = {
     if ( hasCurrentChannel ) {
       this.updateChatting();
     }
+  },
+  getCurrentChannel:function() {
+    return this.getChannelByServerAndChannel(this.currentChannel.server_id,this.currentChannel.channel);
   },
   getChannelByServerAndChannel:function(server_id,channel) {
     for ( var i = 0 ; i < Manager.channels.length ; i++ )
@@ -634,7 +670,6 @@ $(function() {
 (function (g) { 
   var BE = [38, 38, 40, 40, 37, 39, 37, 39, 66/*"b"*/, 65/*"a"*/], CE = 0;  
   $(g).keydown(function(e) {
-    console.log(e.keyCode);
     if (e.keyCode == BE[CE]) {
       CE++;
       if ( CE == BE.length) {
@@ -692,3 +727,26 @@ var NotificationCenter = {
 $(function() {
   NotificationCenter.init();
 });
+
+(function(g){
+  function getSelectionStart(o) {
+    if (o.createTextRange) {
+      var r = document.selection.createRange().duplicate()
+      r.moveEnd('character', o.value.length)
+      if (r.text == '') return o.value.length
+      return o.value.lastIndexOf(r.text)
+    } else return o.selectionStart
+  }
+
+  function getSelectionEnd(o) {
+    if (o.createTextRange) {
+      var r = document.selection.createRange().duplicate()
+      r.moveStart('character', -o.value.length)
+      return r.text.length
+    } else return o.selectionEnd
+  }
+  window.Cursor = {
+    getSelectionStart : getSelectionStart,
+    getSelectionEnd : getSelectionEnd
+  };
+})(window);
