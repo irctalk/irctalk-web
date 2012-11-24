@@ -72,7 +72,7 @@ var Manager = {
 
             var next_state_idx = -1;
             for ( var i = state_idx+1, _n = channel.members.length; i < _n ; i++ ){
-              if ( channel.members[i].match(state_tap_string) ) {
+              if ( channel.members[i].match(new RegExp("^"+state_tap_string,"i")) ) {
                 next_state_idx = i;
                 break;
               }
@@ -574,6 +574,7 @@ function socket_message(msg) {
       case -401:
         clearLocal();
         tryAuth();
+        $("#auth").click();
         return;
         break;
       case -404:
