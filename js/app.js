@@ -39,7 +39,7 @@ var Manager = {
       function getState(keyCode, start, end) {
         var s;
         switch (keyCode) {
-          case '9':
+          case 9:
             if ( start == end ) {
               s = _S.TAP_ACTIVE;
             } else {
@@ -64,28 +64,28 @@ var Manager = {
         
         switch ([pstate,state].join('')) {
           case [_S.NOT_ACTIVE,_S.TAP_ACTIVE].join(''):
+            state_tap_string = this.value.match(/\S+$/);
+            state_idx = -1;
+          case [_S.TAP_ACTIVE,_S.TAP_ACTIVE].join(''):
             var channel = Manager.getCurrentChannel();
             var value = this.value;
 
-            var last_match = value.match(/\S+$/);
-            var same_idx = -1;
-            for ( var i = 0, _n = channel.members; i < _n ; i++ ){
-              if ( channel.members[i].length < last_match.length ) {
-                continue;
-              } else if (channel.members[i]==last_match){
-                same_idx = i;
+            var next_state_idx = -1;
+            for ( var i = state_idx+1, _n = channel.members.length; i < _n ; i++ ){
+              if ( channel.members[i].match(state_tap_string) ) {
+                next_state_idx = i;
+                break;
               }
             }
-            state_tap_string = last_match;
-            //value.replace(/\S+$/,"asdf3")
-            //this.setSelectionRange(l,l);
-          
-            //console.log(state_tap_string + " " + state);
-            return false;
 
-            break;
-          case [_S.TAP_ACTIVE,_S.TAP_ACTIVE].join(''):
-          
+            state_idx = next_state_idx;
+            if ( state_idx == -1 ) {
+              value = value.replace(/\S+$/,state_tap_string)
+            } else {
+              value = value.replace(/\S+$/,channel.members[i]+":")
+            }
+            this.value = value;
+            return false;
             break;
           default:
             state_tap_string = undefined;
@@ -487,7 +487,7 @@ var socket;
 
 
 function connect(callback_onopen) {
-  var host = "ws://laika.redfeel.net:9001/";  
+  var host = IRCTALK_CONFIG.SERVER;
   try{  
     socket = new WebSocket(host);  
     message('<p class="event">Socket Status: '+socket.readyState+'</p>');  
@@ -665,6 +665,10 @@ function tryAuth() {
 }
 
 $(function(){
+  if ( !IRCTALK_CONFIG ) {
+    alert("NO CONFIG FILE. Add /js/config.js (ex. IRCTALK_CONFIG = { SERVER:'' } )")
+    return;
+  }
   tryAuth();
 });
 
