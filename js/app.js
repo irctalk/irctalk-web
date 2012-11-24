@@ -33,37 +33,63 @@ var Manager = {
           return;
         }
       });
-      var state = 0, state_tap_string, state_idx;
-      $('#text-input').keydown(function(event) {
-        if (event.keyCode == '9') {
-          if (Manager.currentChannel) {
-            var channel = Manager.getCurrentChannel();
-            var cs = Cursor.getSelectionStart(this);
-            var ce = Cursor.getSelectionEnd(this);
-            var value = this.value;
-            if ( cs == ce ) {
-              state = 1;
+      var pstate=-1, state = 0, state_tap_string, state_idx;
+      var _S = {NOT_ACTIVE:0,TAP_ACTIVE:1};
 
-              var last_match = value.match(/\S+$/);
-              var same_idx = -1;
-              for ( var i = 0, _n = channel.members; i < _n ; i++ ){
-                if ( channel.members[i].length < last_match.length ) {
-                  continue;
-                } else if (channel.members[i]==last_match){
-                  same_idx = i;
-                }
-              }
-              state_tap_string = last_match;
-              //value.replace(/\S+$/,"asdf3")
-              //this.setSelectionRange(l,l);
+      function getState(keyCode, start, end) {
+        var s;
+        switch (keyCode) {
+          case '9':
+            if ( start == end ) {
+              s = _S.TAP_ACTIVE;
+            } else {
+              s = _S.NOT_ACTIVE;
             }
-          }
-          //console.log(state_tap_string + " " + state);
-          return false;
-        } else {
-          state=-1;
-          state_tap_string = undefined;
-          //console.log(state_tap_string + " " + state);
+            break;
+          default:
+            s = _S.NOT_ACTIVE
+            break;
+        }
+        return s;
+      }
+
+      $('#text-input').keydown(function(event) {
+        if (!Manager.currentChannel) return;
+            
+        var c_start = Cursor.getSelectionStart(this);
+        var c_end = Cursor.getSelectionEnd(this);
+
+        pstate = state;
+        state = getState(event.keyCode, c_start, c_end);
+        
+        switch ([pstate,state].join('')) {
+          case [_S.NOT_ACTIVE,_S.TAP_ACTIVE].join(''):
+            var channel = Manager.getCurrentChannel();
+            var value = this.value;
+
+            var last_match = value.match(/\S+$/);
+            var same_idx = -1;
+            for ( var i = 0, _n = channel.members; i < _n ; i++ ){
+              if ( channel.members[i].length < last_match.length ) {
+                continue;
+              } else if (channel.members[i]==last_match){
+                same_idx = i;
+              }
+            }
+            state_tap_string = last_match;
+            //value.replace(/\S+$/,"asdf3")
+            //this.setSelectionRange(l,l);
+          
+            //console.log(state_tap_string + " " + state);
+            return false;
+
+            break;
+          case [_S.TAP_ACTIVE,_S.TAP_ACTIVE].join(''):
+          
+            break;
+          default:
+            state_tap_string = undefined;
+            break;
         }
       });
 
@@ -692,7 +718,7 @@ var NotificationCenter = {
       $("#request_permission").hide();
       // function defined in step 2
       notification_test = window.webkitNotifications.createNotification(
-        'icon.png', 'Hello World!','You can get Notifications!');
+        '/image/icon.png', 'Hello World!','You can get Notifications!');
       notification_test.ondisplay = function() {  };
       notification_test.onclick = function() {
         notification_test.cancel();
@@ -709,7 +735,7 @@ var NotificationCenter = {
     this.permission = window.webkitNotifications.checkPermission();
     if (this.permission == 0) { // 0 is PERMISSION_ALLOWED
       var notification = window.webkitNotifications.createNotification(
-        'icon.png', title, content);
+        '/image/icon.png', title, content);
       notification.ondisplay = ondisplay;
       notification.onclick = onclick;
       notification.show();
