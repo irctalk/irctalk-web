@@ -1,3 +1,11 @@
+(function () {
+  var a = 0;
+  window.getNextId = function() {
+    a+=1;
+    return a;
+  } 
+})()
+
 //serverid:channel,[]
 var LOGS = {
 
@@ -524,10 +532,12 @@ function message(msg){
   $("#debugLog").scrollTop(currentScroll+40);
 }  
   
-function socket_action(action_name, data) {
+function socket_action(action_name, data, msg_id) {
   if ( action_name!="pushLogs") sent_log(action_name,data);
-
-  socket.send(JSON.stringify({"type":action_name, "data": data}));
+  if (!msg_id) {
+    msg_id = getNextId();
+  }
+  socket.send(JSON.stringify({"type":action_name, "data": data, "msg_id":msg_id}));
 }
 
 function getHash(key) {
@@ -617,9 +627,11 @@ function socket_message(msg) {
       Manager.pushLogs(inner_data.logs, false);
       break;
     case "pushLog":
+      if ( inner_data.log.noti ) {
+        socket_action("pushLog",{ log_id:inner_data.log.log_id}, data.msg_id );
+      }
     case "sendLog":
       Manager.pushLogs([inner_data.log], true);
-      //ACK : socket_action("pushLogs",{"log_ids":ids});
       break;
     default:
       //alert("unkown data type")
