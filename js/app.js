@@ -11,13 +11,65 @@ var LOGS = {
 
 };
 
+var ChannelManager = {
+  initChannelView:function() {
+    $("#channel-on-off").click(function() {
+      var channel_info = Manager.getCurrentChannel();
+      var is_join = (channel_info.joined);
+      socket_action('joinPartChannel',{ server_id:channel_info.server_id,channel:channel_info.channel,join:!is_join});
+    })
+
+    $("#channel-delete").click(function() {
+      var channel_info = Manager.getCurrentChannel();
+      socket_action('delChannel',{ server_id:channel_info.server_id,channel:channel_info.channel});
+    })
+  },
+  updateChannel:function(channels) {
+    var need_update_channel_list = false;;
+    for ( var i = 0, _n=channels.length; i<_n ; i++ ) {
+      var channel_info = channels[i];
+      var idx = DataManager.getChannelByServerAndChannelIndex(channel_info.server_id, channel_info.channel);
+      if ( idx != -1 ) {
+        if ( channel_info.deleted != undefined && channel_info.deleted == true ) {
+          DataManager.channels[idx] = undefined;
+          need_update_channel_list = true;
+        }
+        DataManager.channels[idx] = channel_info;
+      }
+    }
+
+    DataManager.channels.filter(function (v) { return v!=undefined }) 
+    if ( need_update_channel_list )
+    {
+      Manager.updateServerListView();
+    }
+    Manager.refreshChannelView();
+  }
+};
+
+var DataManager = {
+  servers:[],
+  channels:[],
+  getChannelByServerAndChannel:function(server_id,channel) {
+    var channel_idx = this.getChannelByServerAndChannelIndex(server_id,channel);
+    return DataManager.channels[channel_idx];
+  },
+  getChannelByServerAndChannelIndex:function(server_id,channel) {
+    for ( var i = 0 ; i < DataManager.channels.length ; i++ )
+    {
+      if ( DataManager.channels[i].server_id == server_id && DataManager.channels[i].channel == channel) {
+        return i;
+      }
+    }
+    return -1;
+  },
+}
+
 var Manager = {
   currentChannel: {
     server_id : -1,
     channel: ""
   },
-  servers:[],
-  channels:[],
   server_template:_.template($('#server-template').html()),
   sendMessage:function() {
     var text = $('#text-input').val();  
@@ -102,6 +154,7 @@ var Manager = {
       });
 
       Manager.initAddServer();
+      ChannelManager.initChannelView();
     });
   },
   pushLogs:function(logs, noti) {
@@ -146,16 +199,8 @@ var Manager = {
     }
   },
   getCurrentChannel:function() {
-    return this.getChannelByServerAndChannel(this.currentChannel.server_id,this.currentChannel.channel);
-  },
-  getChannelByServerAndChannel:function(server_id,channel) {
-    for ( var i = 0 ; i < Manager.channels.length ; i++ )
-    {
-      if ( Manager.channels[i].server_id == server_id && Manager.channels[i].channel == channel) {
-        return Manager.channels[i];
-      }
-    }
-  },
+    return DataManager.getChannelByServerAndChannel(this.currentChannel.server_id,this.currentChannel.channel);
+  },  
   getPastLogs: function() {
     this.currentChannel.isPastLogsLoading = this.currentChannel.isPastLogsLoading || false;
     if ( this.currentChannel.isPastLogsLoading ) return;
@@ -232,11 +277,24 @@ var Manager = {
       return $message;
     }
   },
+  refreshChannelView:function() {
+    var channel_info = this.getCurrentChannel();
+    if (channel_info.joined) {
+      $("#channel-on-off").text("Leave")
+      $("#text-input").attr("disabled",false)
+      $("#chatLog").removeClass("disabled");
+    } else {
+      $("#channel-on-off").text("Join")
+      $("#text-input").attr("disabled",true)
+      $("#chatLog").addClass("disabled");
+    }
+  },
   setCurrentChannel:function(channel_info) {
     var server_id = channel_info.server_id;
     var channel_name = channel_info.channel;
     if ( server_id != this.currentChannel.server_id || channel_name!= this.currentChannel.channel )
     {
+      $("#channel-div").show();
       this.currentChannel.server_id = server_id;
       this.currentChannel.channel = channel_name;
       $("#irc-channel-topic").text(channel_info.topic);
@@ -246,13 +304,16 @@ var Manager = {
     var $li = $(".server-header[server_id="+server_id+"]").siblings().find("a").filter(function() { return $(this).text()==channel_name;}).parent();
     $("#serverList > li > ul > li").not($li).removeClass("active");
     $li.addClass("active");
+
+    this.refreshChannelView();
   },
   setServers:function(connection_info) {
     var servers = connection_info['servers'];
     var channels = connection_info['channels'];
 
-    this.servers = servers;
-    this.channels = channels;
+    DataManager.servers = servers;
+    DataManager.channels = channels;
+    DataManager.channels.sort(function(a,b) { return a.channel < b.channel ? -1 : 1;} )      
 
     this.updateServerListView();
     socket_action("getInitLogs",{});
@@ -261,27 +322,28 @@ var Manager = {
     //update by Manager's servers, channels
     var $serverList = $("#serverList");
     $serverList.html("");
-    for (var i = 0 ; i < this.servers.length; i++) {
-      var $server = this.servers[i];
-      var $server_elem = $(this.server_template($server))
+
+    _.each( DataManager.servers, function(server) {
+      var $server_elem = $(Manager.server_template(server))
       $("#serverList").append($server_elem)
       var $channel_ul = $server_elem.find(".ul-channels");
-      this.channels.sort(function(a,b) { return a.channel < b.channel ? -1 : 1;} )
-      for ( var j = 0 ; j < this.channels.length; j++) {
-        var $channel = this.channels[j];
-        if ($channel.server_id == $server.id )
+
+      _.each( DataManager.channels, function(channel_info) {
+        if (channel_info.server_id == server.id )
         {
-          var $channel_li = $('<li><a href="'+$channel.channel+'"><i class="icon-chevron-right"></i>'+$channel.channel+'</a></li>');
+          var $channel_li = $('<li><a href="'+channel_info.channel+'"><i class="icon-chevron-right"></i>'+channel_info.channel+'</a></li>');
           $channel_ul.append($channel_li);
-          (function(server,channel,topic){
+          (function(channel_info){
             $channel_li.click(function(){
-              Manager.setCurrentChannel({"server_id":server,"channel":channel,"topic":topic});
+              Manager.setCurrentChannel(channel_info);
             });
-          })($server.id,$channel.channel,$channel.topic);
+          })(channel_info);
         }
-      }
+      });
+      
       var $channel_add = $('<li><a><i class="icon-plus"></i>ADD CHANNEL</a></li>')
       $channel_ul.append($channel_add);
+      
       (function(server) {
         $channel_add.click(function() {
           var a= prompt("Enter Channel Name")
@@ -293,13 +355,15 @@ var Manager = {
             socket_action('addChannel',{"server_id":server,"channel":a});
           }
         });
-      })($server.id);
-    }
+      })(server.id);
+    })
+    
     var $addServer_elem = $('<a id="ADD Server"><i class="icon-plus"></i>ADD SERVER</a>');
     $serverList.append($addServer_elem);
     $addServer_elem.click(function(){
       Manager.showAddServer();
     });   
+    $(window).resize();
   },
   initAddServer:function() {
     $("#addServer-form").submit(function(){
@@ -342,154 +406,6 @@ var Manager = {
   }
 };
 Manager.init();
-
-var Channel = Backbone.Model.extend({
-  defaults: function() {
-    return {
-      channel: "Unknown Channel Name",
-      last_log: {
-        channel: "",
-        from: "", //userName
-        log_id: -1 , //log_id
-        message: "", //message
-        server_id: -1,
-        timestamp: 0 //, //timestamp 134997575971
-      },
-      server_id : -1,
-      topic:"",
-      user_count :0 
-    };
-  }
-});
-
-var ChannelList = Backbone.Collection.extend({
-  model: Channel
-});
-
-var ChannelView = Backbone.View.extend({
-  tagName: "li",
-  events: {
-    "click": "setActive"
-  },
-  initialize: function() {
-    this.model.bind('change', this.render, this);
-    _.bindAll(this, 'render');
-  },
-  render: function() {
-    var channel_name = this.model.get('channel');
-    $(this.el).html('<a><i class="icon-chevron-right"></i>'+channel_name+'</a>');
-    return this;
-  },
-  setActive: function() {
-    var $t = this.model;
-    $t.set('active',true);
-    serverListView.collection.each(function(e){ 
-      if($t!=e) {
-        e.set('active',false); 
-      }
-    });
-
-    var channel_name = $t.get('channel');
-    $("#irc-channel-name").text(channel_name);
-    Manager.setCurrentChannel($t.toJSON());
-  }
-});
-
-var ChannelListView  = Backbone.View.extend({
-  initialize: function(channels){
-    this.collection = new ChannelList();
-    for ( var i = 0 ; i < channels.length; i++) {
-      this.collection.add(new Channel(channels[i]));
-    }
-
-    this.render();
-  },
-  render: function(){
-    $(this.el).html("");
-    var self = this;
-    _(this.collection.models).each(function(item){ // in case collection is not empty
-      self.appendItem(item);
-    }, this);
-    return this
-  },
-  appendItem: function(item){
-    var channelView = new ChannelView({
-      model: item
-    });
-    $(this.el).append(channelView.render().el);
-  }  
-});
-
-
-var Server = Backbone.Model.extend({
-  defaults: function() {
-    return {
-      name: "Unknown Server Name",
-      id : -1,
-      channels : [],
-      active : false
-    };
-  },
-
-});
-
-var ServerList = Backbone.Collection.extend({
-  model: Server
-});
-
-var ServerView = Backbone.View.extend({
-  tagName: "li",
-  template: _.template($('#server-template').html()),
-  initialize: function() {
-    this.model.bind('change', this.render, this);
-    
-    _.bindAll(this, 'render');
-  },
-  render: function() {
-    $(this.el).addClass("active");
-    var channels = this.model.get('channels');
-    
-    this.$el.html(this.template(this.model.toJSON()));
-    this.$('.ul-channels').append(
-      (new ChannelListView(channels)).render().$el
-    )
-    return this;
-  },
-  setActive: function() {
-    var $t = this.model;
-    $t.set('active',true);
-    serverListView.collection.each(function(e){ 
-      if($t!=e) {
-        e.set('active',false); 
-      }
-    });
-  }
-})
-
-var ServerListView  = Backbone.View.extend({
-  el: $("#serverList"),
-  initialize: function(servers){
-    this.collection = new ServerList();
-    for ( var i = 0 ; i < servers.length; i++) {
-      this.collection.add(new Server(servers[i]));
-    }
-
-    this.render();
-  },
-  render: function(){
-    var self = this;
-    $(this.el).html("");
-    _(this.collection.models).each(function(item){ // in case collection is not empty
-      self.appendItem(item);
-    }, this);
-  },
-  appendItem: function(item){
-    var serverView = new ServerView({
-      model: item
-    });
-    $(this.el).append(serverView.render().el);
-  }  
-});
 
 var socket;  
 
@@ -633,6 +549,9 @@ function socket_message(msg) {
     case "sendLog":
       Manager.pushLogs([inner_data.log], true);
       break;
+    case "updateChannel":
+      ChannelManager.updateChannel(inner_data.channels);
+      break;
     default:
       //alert("unkown data type")
   }
@@ -688,6 +607,13 @@ $(function(){
 $(function() {
   $(window).resize(function() {
     $("#chatLog,#debugLog").height($(this).height()-150);
+    $("#serverList").height($(this).height()-110)
+    if ( $("#serverList")[0].scrollHeight >  ($(window).height()-110) )
+    {
+      $("#serverList").css("overflow-y","scroll")
+    } else {
+      $("#serverList").css("overflow-y","")
+    }
   }).resize();
   $("#chatLog").scroll(function(e){ 
     var scrollTop = this.scrollTop;
@@ -768,6 +694,7 @@ var NotificationCenter = {
 };
 
 $(function() {
+  $("#channel-div").hide();
   NotificationCenter.init();
 });
 
