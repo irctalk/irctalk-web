@@ -35,6 +35,9 @@ var ChannelManager = {
           need_update_channel_list = true;
         }
         DataManager.channels[idx] = channel_info;
+        need_update_channel_list = true;
+      } else {
+        DataManager.channels.push(channel_info);
       }
     }
 
