@@ -25,6 +25,17 @@ var ChannelManager = {
     })
   },
   updateChannel:function(channels) {
+    function merge_channel_info(idx, channel_info) {
+      var target = DataManager.channels[idx];
+      delete channel_info.channel;
+      delete channel_info.server_id;
+
+      if ( channel_info.joined != undefined ) {
+        target.joined = channel_info.joined;
+      }
+      DataManager.channels[idx] = target;
+    }
+
     var need_update_channel_list = false;;
     for ( var i = 0, _n=channels.length; i<_n ; i++ ) {
       var channel_info = channels[i];
@@ -34,7 +45,7 @@ var ChannelManager = {
           DataManager.channels[idx] = undefined;
           need_update_channel_list = true;
         }
-        DataManager.channels[idx] = channel_info;
+        merge_channel_info(idx,channel_info);
         need_update_channel_list = true;
       } else {
         DataManager.channels.push(channel_info);
@@ -185,7 +196,7 @@ var Manager = {
       if ( !found ) {
         LOGS[server_id][channel].push(logs[i]);
         if ( noti && logs[i].noti ) {
-          var channelInfo = this.getChannelByServerAndChannel(server_id,channel);
+          var channelInfo = DataManager.getChannelByServerAndChannel(server_id,channel);
           NotificationCenter.showNotification(channel,logs[i].message, null, (function (g,channelInfo) { 
             return function () { 
               g.setCurrentChannel(channelInfo);
