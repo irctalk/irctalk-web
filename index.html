@@ -24,13 +24,17 @@
           background-color: white;
         }
 
-        .irctalk-sidenav.affix {
+        #sidebar > * {
           position: relative;
           top:50px;
         }
-
+        
         #addServer-div {
           overflow:auto;
+          position: absolute;
+          background: white;
+          top: 50%;
+          margin-top: -133px;
         }
 
         #addServer-form {
@@ -154,7 +158,7 @@
     <div class="container">
       
     <div class="row">
-      <div class="span3">
+      <div class="span3" id="sidebar">
         <ul id="serverList" class="nav nav-list irctalk-sidenav affix">
         </ul>
         <div id="addServer-div" style="display:none;">

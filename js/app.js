@@ -615,6 +615,7 @@ $(function() {
     {
       $("#serverList").css("overflow-y","scroll")
     } else {
+      $("#serverList").css("height","auto");
       $("#serverList").css("overflow-y","")
     }
   }).resize();
