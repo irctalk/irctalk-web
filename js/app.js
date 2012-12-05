@@ -1,3 +1,8 @@
+require(["jquery", "js/irc.string.js?1"], function($, irc) {
+
+});
+
+
 (function () {
   var a = 0;
   window.getNextId = function() {
@@ -280,7 +285,8 @@ var Manager = {
       } else {
         fromString = '<b>'+appendLog.from+': </b>';
       }
-      var $message = $('<p class="message" log_id="'+appendLog.log_id+'"><span class="debug">'+appendLog.log_id+'  </span><span class="log-time">'+logTimeString+'</span>'+fromString+appendLog.message+'</p>');
+
+      var $message = $('<p class="message" log_id="'+appendLog.log_id+'"><span class="debug">'+appendLog.log_id+'  </span><span class="log-time">'+logTimeString+'</span>'+fromString+ircStringToHTML(appendLog.message)+'</p>');
       if ( isSystemMessage ) {
         $message.addClass("system");
       }
@@ -670,10 +676,16 @@ $(function() {
 var NotificationCenter = {
   permission:0,
   init:function (){
-    if ( !window.webkitNotifications ) return;
+    if ( !window.webkitNotifications ) {
+      $("#request_permission").hide();
+      return;
+    }
     this.permission = window.webkitNotifications.checkPermission();
     if (this.permission == 0) { // 0 is PERMISSION_ALLOWED
       $("#request_permission").hide();
+      if (localStorage.getItem("hello-world") == 1) return;
+      localStorage.setItem("hello-world",1);
+      
       // function defined in step 2
       notification_test = window.webkitNotifications.createNotification(
         '/image/icon.png', 'Hello World!','You can get Notifications!');
