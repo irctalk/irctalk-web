@@ -26,7 +26,7 @@
 
         #sidebar > * {
           position: relative;
-          top:50px;
+          top:20px;
         }
         
         #addServer-div {
@@ -35,6 +35,11 @@
           background: white;
           top: 50%;
           margin-top: -133px;
+        }
+
+        #addServer-form input {
+          width: auto;
+          display: inline-block;
         }
 
         #addServer-form {
@@ -77,6 +82,8 @@
 
 
         #irc-channel-topic {
+          max-width: 93%;
+          width: auto;
           text-overflow: ellipsis;
           overflow: hidden;
           white-space: nowrap;
@@ -100,6 +107,9 @@
         }
 
         @media (max-width: 767px) {
+          #serverList {
+            margin-bottom: 50px;
+          }
           #serverList > li > ul > li {
             float: left;
           }
