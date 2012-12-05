@@ -18,13 +18,16 @@ define(function(require, exports, module) {
     '15':'lightgray'
   };
 
-  var specials = {
-    '\x03': 'colors',
-    '\x00': 'normal',
-    '\x1F': 'underline',
-    '\x02': 'bold',
-    '\x16': 'italic'
-  };
+  var IRC_SPECIAL = {
+    BOLD:'\x02',
+    COLOR:'\x03',
+    ITALIC:'\x16',
+    UNDERLINE:'\x1F',
+    RESET:'\x0f'
+  }
+  var specials = [];
+  for ( var k in IRC_SPECIAL )
+    specials.push(IRC_SPECIAL[k])
 
   var cssStyles = {
     'colors':function(bgColor,fontColor) {
@@ -84,27 +87,26 @@ define(function(require, exports, module) {
   window.ircStringToHTML = exports.ircStringToHTML = function (str) {
     var r = [];
     var lastStates = null;
-    
     var states = resetStates();
     for ( var idx in str ) {
       var ch = str[idx];
       
-      if (ch in specials) {
+      if (specials.indexOf(ch) != -1) {
         switch (ch) {
-          case '\x03':
+          case IRC_SPECIAL.COLOR:
             states.colors.parsing = [];
             break;
-          case '\x00':
-            states = resetStates();
-            break;
-          case '\x1F':
+          case IRC_SPECIAL.UNDERLINE:
             states.underline = !states.underline;
             break;
-          case '\x02':
+          case IRC_SPECIAL.BOLD:
             states.bold = !states.bold;
             break;
-          case '\x16':
+          case IRC_SPECIAL.ITALIC:
             states.italic = !states.italic;
+            break;
+          case IRC_SPECIAL.RESET:
+            states = resetStates();
             break;
         }
         continue;  
@@ -127,16 +129,12 @@ define(function(require, exports, module) {
           } else {
             if ( colors_parsed[0] ) {
               var c_str = colors_parsed[0];
-              if ( c_str.length == 1 )
-                c_str = "0" + c_str;
-              states.colors.fontColor = c_str;
+              states.colors.fontColor = (c_str.length == 1) ? "0"+c_str : c_str;
             }
             
             if ( colors_parsed[1] ) {
               var c_str = colors_parsed[1];
-              if ( c_str.length == 1 )
-                c_str = "0" + c_str;
-              states.colors.bgColor = c_str;
+              states.colors.bgColor = (c_str.length == 1) ? "0"+c_str : c_str;
             }            
           }
           states.colors.parsing = null;
