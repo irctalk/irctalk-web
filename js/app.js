@@ -580,23 +580,29 @@ function socket_message(msg) {
 var serverListView;
 
 function tryAuth() {
+  function setLogout() {
+    $("#auth").attr("href","./");
+    $("#auth").click(function() {
+      clearLocal();
+    })
+    $("#auth span").text("Logout");
+  }
+
   if ( getLocal("auth_key") ) {
     connect((function(auth_key) {
       return function () {
         socket_action("login",{"auth_key":auth_key})
       }
     })(getLocal("auth_key")));
+    setLogout();
     return;
   }
 
   var hasTokenHash = (getHash("access_token").length > 0);
   if ( hasTokenHash || getLocal("access_token") && getLocal("access_token").length > 0 ) {
     if ( hasTokenHash ) { saveHashToLocal(); }
-    $("#auth").attr("href","./");
-    $("#auth").click(function() {
-      clearLocal();
-    })
-    $("#auth span").text("Logout");
+    setLogout();
+
     connect((function(access_token) {
       return function () {
         socket_action("register",{"access_token":access_token});
