@@ -11,8 +11,7 @@
       <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Open+Sans:400,700">
       <link href="bootstrap/css/bootstrap.css" rel="stylesheet"/>
       <link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet"/>
-      <link href="css/webkit-scroll.css" rel="stylesheet"/>
-    
+      
       <style>
         a {
           cursor: pointer;
@@ -55,6 +54,10 @@
           padding: 10px;
         }
 
+        .message {
+          word-break: break-all;
+        }
+
         .message .log-time {
           float:right;
           color: rgba(100, 100, 100, 0.9);
@@ -80,6 +83,13 @@
           display:none;
         }
 
+        #chatLog {
+          top: 0;
+          left: 0;
+          bottom: 0;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+        }
 
         #irc-channel-topic {
           max-width: 93%;
@@ -197,8 +207,8 @@
               </ul>
             </div>
           </div>
-          <div id="chatLog" class="webkit-scrollbar"></div>
-          <div id="debugLog" class="webkit-scrollbar"></div>
+          <div id="chatLog"></div>
+          <div id="debugLog"></div>
           <input id="text-input" class="span9" type="text"/>
         </section>
       </div>
