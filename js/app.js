@@ -422,6 +422,13 @@ var Manager = {
   },
   showAddServer:function() {
     $("#addServer-div input").val("");
+    if (undefined != IRCTALK_CONFIG.IS_INHOUSE) {
+      $("#addServer-div input[name=name]").val(IRCTALK_CONFIG.IS_INHOUSE['name']);
+      $("#addServer-div input[name=server-host]").val(IRCTALK_CONFIG.IS_INHOUSE['server-host']);
+      $("#addServer-div input[name=server-port]").val(IRCTALK_CONFIG.IS_INHOUSE['server-port']);
+      if ( IRCTALK_CONFIG.IS_INHOUSE['server-ssl'] ) $("#addServer-div input[name=server-ssl]").attr("checked","checked");
+    }
+    
     $("#addServer-div").show();
   }
 };
